@@ -9,7 +9,7 @@ router.get('/:coupleId', async (req, res) => {
     const { coupleId } = req.params;
     const { limit = 50, before } = req.query;
 
-    const query = { coupleId };
+    const query = { coupleId, type: { $ne: 'hug' } };
     if (before) {
       query.timestamp = { $lt: new Date(before) };
     }

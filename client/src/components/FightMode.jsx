@@ -9,6 +9,7 @@ const FIGHT_DURATIONS = [
 
 export default function FightMode({ endsAt, onDisable, onHug }) {
   const [quote, setQuote] = useState('')
+  const [quoteSource, setQuoteSource] = useState('')
   const [timeLeft, setTimeLeft] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
 
@@ -55,8 +56,10 @@ export default function FightMode({ endsAt, onDisable, onHug }) {
       })
       const data = await response.json()
       setQuote(data.quote?.text || 'Take a deep breath. This moment will pass.')
+      setQuoteSource(data.quote?.source || 'curated')
     } catch (error) {
       setQuote('Take a deep breath. This moment will pass.')
+      setQuoteSource('curated')
     }
   }
 
@@ -88,9 +91,26 @@ export default function FightMode({ endsAt, onDisable, onHug }) {
         </p>
 
         <div className="bg-white/60 backdrop-blur-sm rounded-3xl p-8 mb-8 shadow-lg">
-          <p className="text-xl text-warm-700 italic leading-relaxed">
+          <p className="text-xl text-warm-700 italic leading-relaxed mb-3">
             "{quote}"
           </p>
+          <div className="flex items-center justify-center gap-2">
+            {quoteSource === 'ai' ? (
+              <>
+                <svg className="w-4 h-4 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-xs text-sage font-medium">AI Generated</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-warm-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span className="text-xs text-warm-300 font-medium">Thoughtful Quote</span>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="text-5xl font-bold text-warm-600 mb-8">

@@ -11,6 +11,9 @@ import SongShare from '../components/SongShare'
 import DailyQuestion from '../components/DailyQuestion'
 import Sidebar from '../components/Sidebar'
 import Toast from '../components/Toast'
+import HugReaction from '../components/HugReaction'
+import SpicyModal from '../components/SpicyModal'
+import MoodToggle from '../components/MoodToggle'
 import API_BASE from '../config'
 
 export default function ChatRoom() {
@@ -21,6 +24,9 @@ export default function ChatRoom() {
   const [showSongShare, setShowSongShare] = useState(false)
   const [showDailyQuestion, setShowDailyQuestion] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
+  const [showSpicy, setShowSpicy] = useState(false)
+  const [inTheMood, setInTheMood] = useState(false)
+  const [partnerInTheMood, setPartnerInTheMood] = useState(false)
   const [partnerTyping, setPartnerTyping] = useState(false)
   const [partnerMood, setPartnerMood] = useState(() => {
     const stored = localStorage.getItem('partnerMood')
@@ -35,6 +41,8 @@ export default function ChatRoom() {
   })
   const [hasAnsweredDaily, setHasAnsweredDaily] = useState(false)
   const [toast, setToast] = useState(null)
+  const [hugReaction, setHugReaction] = useState(null)
+  const [isInputFocused, setIsInputFocused] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const socket = useSocket()
@@ -143,11 +151,14 @@ export default function ChatRoom() {
     socket.emit('join_couple', { coupleId: couple._id, userId: user.userId })
 
     socket.on('new_message', (message) => {
-      setMessages(prev => [...prev, message])
-      scrollToBottom()
-
-      if (message.type === 'hug' && fightMode.active && message.senderId?._id !== user.userId) {
-        setToast({ type: 'hug', message: 'Partner sent you a hug!' })
+      if (message.type === 'hug') {
+        // Show hug animation but don't add to chat
+        setHugReaction({
+          senderName: message.senderId?.deviceName || 'Partner'
+        })
+      } else {
+        setMessages(prev => [...prev, message])
+        scrollToBottom()
       }
     })
 
@@ -170,18 +181,25 @@ export default function ChatRoom() {
       localStorage.setItem('partnerMood', JSON.stringify(moodData))
     })
 
+    socket.on('partner_mood_toggle', ({ inTheMood }) => {
+      setPartnerInTheMood(inTheMood)
+    })
+
     return () => {
       socket.off('new_message')
       socket.off('partner_typing')
       socket.off('fight_mode_started')
       socket.off('fight_mode_ended')
       socket.off('partner_mood')
+      socket.off('partner_mood_toggle')
     }
   }, [socket, couple])
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    if (!isInputFocused) {
+      scrollToBottom()
+    }
+  }, [messages, isInputFocused])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -195,6 +213,44 @@ export default function ChatRoom() {
   const sendHug = () => {
     if (!socket || !couple) return
     socket.emit('send_hug', { coupleId: couple._id, senderId: user.userId })
+  }
+
+  const toggleInTheMood = () => {
+    if (!socket || !couple) return
+    const newMood = !inTheMood
+    setInTheMood(newMood)
+    socket.emit('mood_toggle', { coupleId: couple._id, userId: user.userId, inTheMood: newMood })
+  }
+
+  const sendSpicyPosition = (position) => {
+    console.log('=== SEND SPICY POSITION ===')
+    console.log('socket:', socket ? 'exists' : 'NULL')
+    console.log('socket.connected:', socket?.connected)
+    console.log('couple:', couple)
+    console.log('user.userId:', user.userId)
+    console.log('position:', position)
+    if (!socket || !couple) { console.log('EARLY RETURN - no socket or couple'); return }
+    console.log('Emitting send_message...')
+    socket.emit('send_message', {
+      coupleId: couple._id,
+      senderId: user.userId,
+      content: position,
+      type: 'spicy_position',
+      metadata: {}
+    })
+    console.log('Emitted successfully')
+  }
+
+  const sendSpicyQuestion = (question, category) => {
+    console.log('Sending spicy question:', question, category)
+    if (!socket || !couple) return
+    socket.emit('send_message', {
+      coupleId: couple._id,
+      senderId: user.userId,
+      content: question,
+      type: 'spicy_question',
+      metadata: { category }
+    })
   }
 
   const enableFightMode = (duration) => {
@@ -237,6 +293,7 @@ export default function ChatRoom() {
           couple={couple}
           fightMode={fightMode}
           partnerMood={partnerMood}
+          inTheMood={partnerInTheMood}
           onMoodClick={() => {
             if (partnerMood?.note) {
               setToast({ type: 'mood', mood: partnerMood.mood, message: `Partner is feeling ${partnerMood.mood}: "${partnerMood.note}"` })
@@ -245,6 +302,17 @@ export default function ChatRoom() {
             }
           }}
         />
+
+        {/* Private Zone Quick Access */}
+        <div className="bg-cream/50 px-4 py-2 flex items-center justify-between">
+          <MoodToggle isOn={inTheMood} onToggle={toggleInTheMood} />
+          <button
+            onClick={() => setShowSpicy(true)}
+            className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-full text-sm font-medium"
+          >
+            🔥 Private Zone
+          </button>
+        </div>
 
         <MessageList
           messages={messages}
@@ -264,9 +332,10 @@ export default function ChatRoom() {
 
         <MessageInput
           onSend={sendMessage}
-          onHug={sendHug}
           onTyping={handleTyping}
           onSongShare={() => setShowSongShare(true)}
+          onFocus={() => setIsInputFocused(true)}
+          onBlur={() => setIsInputFocused(false)}
           disabled={fightMode.active}
         />
       </div>
@@ -304,6 +373,21 @@ export default function ChatRoom() {
               userId: user.userId
             }))
           }}
+        />
+      )}
+
+      {showSpicy && (
+        <SpicyModal
+          onClose={() => setShowSpicy(false)}
+          onSendPosition={sendSpicyPosition}
+          onSendQuestion={sendSpicyQuestion}
+        />
+      )}
+
+      {hugReaction && (
+        <HugReaction
+          senderName={hugReaction.senderName}
+          onComplete={() => setHugReaction(null)}
         />
       )}
 

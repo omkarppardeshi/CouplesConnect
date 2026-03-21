@@ -1,12 +1,21 @@
 import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
 let openai = null;
+let groq = null;
 
 function getOpenAIClient() {
   if (!openai && process.env.OPENAI_API_KEY) {
     openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
   return openai;
+}
+
+function getGroqClient() {
+  if (!groq && process.env.GROQ_API_KEY) {
+    groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groq;
 }
 
 const CATEGORIES = {
@@ -37,9 +46,36 @@ const CATEGORIES = {
 };
 
 export async function generateQuote(category = 'calm') {
-  const client = getOpenAIClient();
+  const groqClient = getGroqClient();
 
-  // Try OpenAI first
+  // Try Groq first (fastest, most generous free tier)
+  if (groqClient) {
+    try {
+      const completion = await groqClient.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: `You are a wise, compassionate relationship counselor. Generate a single, brief (under 30 words), calming quote for a couple who is in a disagreement and needs to cool down. Focus on themes of: calm, patience, love, understanding. Be genuine, not cheesy. Do not use emojis or quotation marks in your response.`
+          },
+          {
+            role: "user",
+            content: `Give me a calming quote about ${category} for a couple having a difficult moment.`
+          }
+        ],
+        max_tokens: 60,
+        temperature: 0.8
+      });
+
+      const quote = completion.choices[0].message.content.trim();
+      return { text: quote, source: 'ai', category };
+    } catch (error) {
+      console.error('Groq quote generation failed:', error.message);
+    }
+  }
+
+  // Try OpenAI as fallback
+  const client = getOpenAIClient();
   if (client) {
     try {
       const completion = await client.chat.completions.create({
@@ -61,7 +97,7 @@ export async function generateQuote(category = 'calm') {
       const quote = completion.choices[0].message.content.trim();
       return { text: quote, source: 'ai', category };
     } catch (error) {
-      console.error('OpenAI quote generation failed:', error);
+      console.error('OpenAI quote generation failed:', error.message);
     }
   }
 

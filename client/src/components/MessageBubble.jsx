@@ -2,6 +2,58 @@ export default function MessageBubble({ message, isOwn }) {
   const isHug = message.type === 'hug'
   const isQuestion = message.type === 'question'
   const isSong = message.type === 'song'
+  const isSpicyPosition = message.type === 'spicy_position'
+  const isSpicyQuestion = message.type === 'spicy_question'
+
+  // Spicy Position Card
+  if (isSpicyPosition) {
+    const position = message.content
+    return (
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-xs rounded-2xl overflow-hidden shadow-md ${
+          isOwn ? 'bg-gradient-to-br from-pink-500 to-rose-500' : 'bg-gradient-to-br from-purple-500 to-pink-500'
+        }`}>
+          <div className="px-3 py-1.5 bg-black/20 flex items-center gap-2">
+            <span className="text-white/80 text-xs">{isOwn ? 'You sent' : 'Partner sent'}</span>
+            <span className="text-xs">👀</span>
+          </div>
+          <div className="p-4 text-white text-center">
+            <div className="text-3xl mb-2">💑</div>
+            <h3 className="font-bold text-lg mb-1">{position.name}</h3>
+            <span className="inline-block px-2 py-0.5 bg-white/20 rounded-full text-xs mb-2">
+              {position.difficulty}
+            </span>
+            <p className="text-sm opacity-90">{position.feel}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Spicy Question Card
+  if (isSpicyQuestion) {
+    const categoryEmojis = { dirty: '🔥', flirty: '💋', deep: '💕', playful: '😏' }
+    const emoji = categoryEmojis[message.metadata?.category] || '💕'
+    return (
+      <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+        <div className={`max-w-xs rounded-2xl overflow-hidden shadow-md ${
+          isOwn ? 'bg-gradient-to-br from-pink-500 to-purple-500' : 'bg-gradient-to-br from-purple-500 to-pink-500'
+        }`}>
+          <div className="px-3 py-1.5 bg-black/20 flex items-center gap-2">
+            <span className="text-white/80 text-xs">{isOwn ? 'You sent' : 'Partner sent'}</span>
+            <span className="text-xs">{emoji}</span>
+          </div>
+          <div className="p-4 text-white text-center">
+            <div className="text-3xl mb-2">{emoji}</div>
+            <p className="italic">"{message.content}"</p>
+            <span className="inline-block mt-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+              {message.metadata?.category}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isHug) {
     return (

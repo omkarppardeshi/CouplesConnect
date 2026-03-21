@@ -9,7 +9,7 @@ const MOOD_EMOJIS = {
   tired: '😴'
 }
 
-export default function ChatHeader({ onMenuClick, couple, fightMode, partnerMood, onMoodClick }) {
+export default function ChatHeader({ onMenuClick, couple, fightMode, partnerMood, inTheMood, onMoodClick }) {
   const moodValue = partnerMood?.mood || partnerMood
 
   return (
@@ -30,9 +30,11 @@ export default function ChatHeader({ onMenuClick, couple, fightMode, partnerMood
           </div>
           <div>
             <h1 className="font-semibold text-warm-700">You & Your Love</h1>
-            <p className="text-xs text-warm-400">
-              {fightMode.active ? '😌 Fight Mode Active' : 'Connected'}
-            </p>
+            <div className="flex items-center gap-2 text-xs text-warm-400">
+              {fightMode.active && <span>😌 Fight Mode</span>}
+              {inTheMood && <span className="text-pink-500">🔥 In the mood</span>}
+              {!fightMode.active && !inTheMood && <span>Connected</span>}
+            </div>
           </div>
         </div>
       </div>

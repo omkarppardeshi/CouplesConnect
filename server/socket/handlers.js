@@ -29,11 +29,14 @@ export function setupSocketHandlers(io) {
     // Send message
     socket.on('send_message', async ({ coupleId, senderId, content, type = 'text', metadata = {} }) => {
       try {
+        console.log('send_message received:', { coupleId, senderId, type, content });
         // Check if fight mode is active
         const couple = await Couple.findById(coupleId);
+        console.log('Fight mode check:', couple?.fightMode?.active);
         if (couple && couple.fightMode && couple.fightMode.active) {
-          // Only allow hugs during fight mode
-          if (type !== 'hug') {
+          // Only allow hugs and reactions during fight mode
+          if (type !== 'hug' && type !== 'reaction') {
+            console.log('Blocking message - fight mode active');
             socket.emit('fight_mode_active', {
               remainingTime: couple.fightMode.endsAt - Date.now()
             });
@@ -51,6 +54,7 @@ export function setupSocketHandlers(io) {
 
         await message.save();
         await message.populate('senderId', 'deviceName');
+        console.log('Message saved:', message);
 
         // Broadcast to couple
         io.to(`couple:${coupleId}`).emit('new_message', message);
@@ -104,22 +108,21 @@ export function setupSocketHandlers(io) {
       }
     });
 
-    // Virtual hug (works even during fight mode)
+    // Virtual hug (only works during fight mode, not saved to chat)
     socket.on('send_hug', async ({ coupleId, senderId }) => {
-      console.log('send_hug received', { coupleId, senderId, socketId: socket.id });
       try {
-        const message = new Message({
-          coupleId,
-          senderId,
+        // Find the user to get deviceName
+        const User = (await import('../models/User.js')).default;
+        const sender = await User.findById(senderId);
+
+        // Broadcast hug directly without saving to database
+        io.to(`couple:${coupleId}`).emit('new_message', {
+          _id: `hug-${Date.now()}`,
+          type: 'hug',
           content: 'sent a hug',
-          type: 'hug'
+          senderId: { _id: senderId, deviceName: sender?.deviceName || 'Partner' },
+          timestamp: new Date()
         });
-
-        await message.save();
-        await message.populate('senderId', 'deviceName');
-
-        console.log('Emitting new_message to couple:', `couple:${coupleId}`);
-        io.to(`couple:${coupleId}`).emit('new_message', message);
       } catch (error) {
         console.error('Send hug error:', error);
       }
@@ -130,6 +133,11 @@ export function setupSocketHandlers(io) {
       console.log('mood_update received', { coupleId, userId, mood, note, expiresAt });
       // Broadcast mood to partner (not to self)
       socket.to(`couple:${coupleId}`).emit('partner_mood', { mood, note, expiresAt });
+    });
+
+    // Mood toggle (in the mood)
+    socket.on('mood_toggle', ({ coupleId, userId, inTheMood }) => {
+      socket.to(`couple:${coupleId}`).emit('partner_mood_toggle', { inTheMood });
     });
 
     // Disconnect
