@@ -11,7 +11,12 @@ router.post('/register', async (req, res) => {
 
     const existingUser = await User.findOne({ credentialID });
     if (existingUser) {
-      return res.status(200).json({ userId: existingUser._id, isExisting: true });
+      // Update deviceName if registering with a new name
+      if (deviceName && deviceName !== 'My Device') {
+        existingUser.deviceName = deviceName;
+        await existingUser.save();
+      }
+      return res.status(200).json({ userId: existingUser._id, deviceName: existingUser.deviceName, isExisting: true });
     }
 
     const user = new User({
@@ -42,7 +47,7 @@ router.post('/authenticate', async (req, res) => {
     user.counter += 1;
     await user.save();
 
-    res.status(200).json({ userId: user._id, authenticated: true });
+    res.status(200).json({ userId: user._id, deviceName: user.deviceName, authenticated: true });
   } catch (error) {
     console.error('Authentication error:', error);
     res.status(500).json({ error: 'Authentication failed' });

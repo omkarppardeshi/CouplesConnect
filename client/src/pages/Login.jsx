@@ -61,7 +61,7 @@ export default function Login() {
       login({
         userId: data.userId,
         credentialID,
-        deviceName: deviceName || 'My Device'
+        deviceName: data.deviceName || deviceName || 'My Device'
       })
 
       // If already in a couple, go to chat, else go to setup
@@ -102,7 +102,9 @@ export default function Login() {
         throw new Error(data.error || 'Authentication failed')
       }
 
-      login(userData)
+      // Update localStorage with server's deviceName
+      const updatedUserData = { ...userData, deviceName: data.deviceName || userData.deviceName }
+      login(updatedUserData)
 
       // Check if user is in a couple
       const coupleRes = await fetch(`${API_BASE}/api/couples/by-user/${userData.userId}`)

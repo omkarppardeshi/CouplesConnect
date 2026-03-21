@@ -21,8 +21,7 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
-    // Keep user data in localStorage so "I've Used This App Before" works
-    // Only clear session state, not the stored credential
+    localStorage.removeItem('couplesconnect_user')
     setUser(null)
   }
 
