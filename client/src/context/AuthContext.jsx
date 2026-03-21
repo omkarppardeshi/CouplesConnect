@@ -21,12 +21,12 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
-    localStorage.removeItem('couplesconnect_user')
+    // Logout - clears session but keeps credentials for "I've Used This App Before"
     setUser(null)
   }
 
   const logoutClearAll = () => {
-    // Full logout - clears everything (only for "Delete Data" scenario)
+    // Full logout - clears everything including credentials
     localStorage.removeItem('couplesconnect_user')
     localStorage.removeItem('partnerMood')
     localStorage.removeItem('dailyQuestionAnswered')
