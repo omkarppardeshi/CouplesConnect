@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Sidebar({ isOpen, onClose, couple, onShowMood, onShowSong, onShowQuestion, onEnableFightMode, hasAnsweredDaily }) {
+export default function Sidebar({ isOpen, onClose, couple, onShowMood, onShowSong, onShowQuestion, onEnableFightMode, hasAnsweredDaily, onLogout }) {
   const [showFightModeOptions, setShowFightModeOptions] = useState(false)
 
   const FIGHT_DURATIONS = [
@@ -91,6 +91,17 @@ export default function Sidebar({ isOpen, onClose, couple, onShowMood, onShowSon
               </div>
             </div>
           </nav>
+
+          {/* Logout */}
+          <div className="p-4 border-t border-warm-100">
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-500 transition-colors"
+            >
+              <span className="text-xl">🚪</span>
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
 
           {/* Couple Info */}
           {couple && (

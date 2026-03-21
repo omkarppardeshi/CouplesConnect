@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import ChatHeader from '../components/ChatHeader'
@@ -34,7 +35,8 @@ export default function ChatRoom() {
   })
   const [hasAnsweredDaily, setHasAnsweredDaily] = useState(false)
   const [toast, setToast] = useState(null)
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const socket = useSocket()
   const messagesEndRef = useRef(null)
 
@@ -205,6 +207,11 @@ export default function ChatRoom() {
     socket.emit('disable_fight_mode', { coupleId: couple._id })
   }
 
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   const handleTyping = (isTyping) => {
     if (!socket || !couple) return
     socket.emit('typing', { coupleId: couple._id, userId: user.userId, isTyping })
@@ -221,6 +228,7 @@ export default function ChatRoom() {
         onShowQuestion={() => { setShowDailyQuestion(true); setShowSidebar(false); }}
         onEnableFightMode={enableFightMode}
         hasAnsweredDaily={hasAnsweredDaily}
+        onLogout={handleLogout}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
