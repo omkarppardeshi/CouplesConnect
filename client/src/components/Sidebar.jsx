@@ -1,7 +1,13 @@
 import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+import API_BASE from '../config'
 
 export default function Sidebar({ isOpen, onClose, couple, onShowMood, onShowSong, onShowQuestion, onEnableFightMode, hasAnsweredDaily, onLogout }) {
+  const { user, setUser } = useAuth()
   const [showFightModeOptions, setShowFightModeOptions] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [displayName, setDisplayName] = useState(user?.deviceName || '')
+  const [nameLoading, setNameLoading] = useState(false)
 
   const FIGHT_DURATIONS = [
     { label: '15 minutes', value: 15 },
@@ -15,6 +21,28 @@ export default function Sidebar({ isOpen, onClose, couple, onShowMood, onShowSon
     }
     setShowFightModeOptions(false)
     onClose()
+  }
+
+  const handleSaveName = async () => {
+    if (!displayName.trim() || !user?.userId) return
+    setNameLoading(true)
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/user/${user.userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceName: displayName.trim() })
+      })
+      if (response.ok) {
+        const updatedUser = { ...user, deviceName: displayName.trim() }
+        setUser(updatedUser)
+        localStorage.setItem('couplesconnect_user', JSON.stringify(updatedUser))
+        setIsEditingName(false)
+      }
+    } catch (error) {
+      console.error('Failed to update name:', error)
+    } finally {
+      setNameLoading(false)
+    }
   }
 
   return (
@@ -34,6 +62,51 @@ export default function Sidebar({ isOpen, onClose, couple, onShowMood, onShowSon
         }`}
       >
         <div className="h-full flex flex-col">
+          {/* User Name */}
+          <div className="p-4 border-b border-warm-100">
+            {isEditingName ? (
+              <div className="space-y-2">
+                <label className="text-xs text-warm-400 font-medium">My Name</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-cream border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-warm-400"
+                    placeholder="Your name"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    disabled={nameLoading || !displayName.trim()}
+                    className="px-3 py-2 bg-warm-500 text-white rounded-lg text-sm disabled:opacity-50"
+                  >
+                    {nameLoading ? '...' : 'Save'}
+                  </button>
+                </div>
+                <button
+                  onClick={() => { setIsEditingName(false); setDisplayName(user?.deviceName || ''); }}
+                  className="text-xs text-warm-400 hover:text-warm-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setIsEditingName(true); setDisplayName(user?.deviceName || ''); }}
+                className="w-full flex items-center justify-between group"
+              >
+                <div className="text-left">
+                  <p className="text-xs text-warm-400">My Name</p>
+                  <p className="font-medium text-warm-700">{user?.deviceName || 'Tap to set name'}</p>
+                </div>
+                <svg className="w-4 h-4 text-warm-300 group-hover:text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+            )}
+          </div>
+
           {/* Header */}
           <div className="p-4 border-b border-warm-100 flex items-center justify-between">
             <h2 className="font-bold text-warm-700">Menu</h2>

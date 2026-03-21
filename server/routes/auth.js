@@ -67,4 +67,28 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
+// Update user display name
+router.put('/user/:userId', async (req, res) => {
+  try {
+    const { deviceName } = req.body;
+    if (!deviceName || deviceName.trim().length === 0) {
+      return res.status(400).json({ error: 'Device name is required' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.userId,
+      { deviceName: deviceName.trim() },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ userId: user._id, deviceName: user.deviceName });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 export default router;
