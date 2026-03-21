@@ -21,12 +21,21 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
+    // Keep user data in localStorage so "I've Used This App Before" works
+    // Only clear session state, not the stored credential
+    setUser(null)
+  }
+
+  const logoutClearAll = () => {
+    // Full logout - clears everything (only for "Delete Data" scenario)
     localStorage.removeItem('couplesconnect_user')
+    localStorage.removeItem('partnerMood')
+    localStorage.removeItem('dailyQuestionAnswered')
     setUser(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, logoutClearAll, loading }}>
       {children}
     </AuthContext.Provider>
   )
